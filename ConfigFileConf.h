@@ -41,12 +41,12 @@ public:
 		if(!pFile)
 			return false;
 		fseek(pFile, 0, SEEK_END);
-		long nResult = ftell(pFile);
+		size_t nResult = ftell(pFile);
 		if(nResult != -1 && nResult <= nLimit)
 		{
 			fseek(pFile, 0, SEEK_SET);
 			char *pData = new char[nResult + 1];
-			long nData = fread(pData, 1, nResult, pFile);
+			size_t nData = fread(pData, 1, nResult, pFile);
 			pData[nResult] = 0;
 			if(nData == nResult)
 				LoadData(pData);
@@ -65,7 +65,7 @@ public:
 			return false;
 		size_t nData = 0;
 		char *pData = SaveData(&nData);
-		long nResult = fwrite(pData, 1, nData - 1, pFile);
+		size_t nResult = fwrite(pData, 1, nData - 1, pFile);
 		delete pData;
 		fclose(pFile);
 		return nResult == nData;

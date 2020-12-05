@@ -70,14 +70,14 @@ CStdString ConcatPath(const CStdString &sPathA, const CStdString &sPathB)
 bool LoadFile(const char *sPath, CStdString &sText)
 {
 	char *pData = 0;
-	uint32_t nSize = 0;
+	size_t nSize = 0;
 	if(!LoadFile(sPath, pData, nSize))
 		return false;
 	sText.assign(pData, nSize);
 	return true;
 }
 
-bool LoadFile(const char *sPath, char *&pData, uint32_t &nData, uint32_t nExtData)
+bool LoadFile(const char *sPath, char *&pData, size_t &nData, uint32_t nExtData)
 {
 	pData = 0;
 	nData = 0;
@@ -85,7 +85,7 @@ bool LoadFile(const char *sPath, char *&pData, uint32_t &nData, uint32_t nExtDat
 	if(!pFile)
 		return false;
 	fseek(pFile, 0, SEEK_END);
-	long nFileSize = ftell(pFile);
+	size_t nFileSize = ftell(pFile);
 	fseek(pFile, 0, SEEK_SET);
 	if(nFileSize > 0)
 	{
@@ -96,7 +96,7 @@ bool LoadFile(const char *sPath, char *&pData, uint32_t &nData, uint32_t nExtDat
 	return nData > 0;
 }
 
-bool SaveFile(const char *sPath, const char *pData, uint32_t nData)
+bool SaveFile(const char *sPath, const char *pData, size_t nData)
 {
 	FILE *pFile = fopen(sPath, "wb");
 	if(!pFile)
@@ -141,7 +141,7 @@ CStdStringArray StrSplit(const char *lpString, char cDelimiter, char cQuote, boo
 			pResult.push_back(lpStartPtr);
 			break;
 		}
-		if(lpEndPtr != lpStartPtr || lpEndPtr == lpStartPtr && !fSkipEmpty)
+		if(lpEndPtr != lpStartPtr || (lpEndPtr == lpStartPtr && !fSkipEmpty))
 			pResult.push_back(CStdString(lpStartPtr, lpEndPtr));
 		lpString = lpEndPtr + 1;
 	}

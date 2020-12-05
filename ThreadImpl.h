@@ -25,7 +25,7 @@ class CThreadImpl
 {
 public:
 
-	typedef void *(*OnThreadProcFunc)(CThreadImpl *pThread, void *pContext);
+	typedef uint32_t (*OnThreadProcFunc)(CThreadImpl *pThread, void *pContext);
 
 	static CThreadImpl *CreateThread(OnThreadProcFunc pExtFunc, void *pExtCtx)
 	{
@@ -109,7 +109,7 @@ protected:
 #if defined(WIN32)
 	HANDLE m_hThread;
 	static DWORD WINAPI SOnThreadProc(void *pContext) {
-		return (DWORD)((CThreadImpl*)pContext)->OnThreadProc();
+		return ((CThreadImpl*)pContext)->OnThreadProc();
 	}
 	bool WaitThread(uint32_t nTimeout) {
 		return WaitForSingleObject(m_hThread, nTimeout) == WAIT_OBJECT_0;
@@ -120,7 +120,7 @@ protected:
 #else
 	pthread_t m_hThread;
 	static void *SOnThreadProc(void *pContext) {
-		return ((CThreadImpl*)pContext)->OnThreadProc();
+		return (void*)((CThreadImpl*)pContext)->OnThreadProc();
 	}
 	bool WaitThread(uint32_t nTimeout) {
 		int nRet = 0;
@@ -146,14 +146,14 @@ protected:
 	}
 #endif
 
-	virtual void *OnThreadProc()
+	virtual uint32_t OnThreadProc()
 	{
-		void *pReturn = 0;
+		uint32_t nReturn = 0;
 		m_pMutex.Lock();
 		if(m_pExtThreadFunc)
-			pReturn = m_pExtThreadFunc(this, m_pExtThreadCtx);
+			nReturn = m_pExtThreadFunc(this, m_pExtThreadCtx);
 		m_pMutex.Unlock();
-		return pReturn;
+		return nReturn;
 	}
 
 };

@@ -47,8 +47,8 @@ CStdString GetFullPath(const CStdString &sPath);
 CStdString ConcatPath(const CStdString &sPathA, const CStdString &sPathB);
 
 bool LoadFile(const char *sPath, CStdString &sText);
-bool LoadFile(const char *sPath, char *&pData, uint32_t &nData, uint32_t nExtData = 0);
-bool SaveFile(const char *sPath, const char *pData, uint32_t nData);
+bool LoadFile(const char *sPath, char *&pData, size_t &nData, uint32_t nExtData = 0);
+bool SaveFile(const char *sPath, const char *pData, size_t nData);
 
 CStdString CStdStrFormat(const char *lpFmt, ...);
 CStdStringArray StrSplit(const char *lpString, char cDelimiter, char cQuote, bool fSkipEmpty);
