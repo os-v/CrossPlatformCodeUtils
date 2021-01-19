@@ -53,9 +53,16 @@ CStdString GetCurPath()
 
 CStdString GetFullPath(const CStdString &sPath)
 {
-	if(sPath.length() > 2 && (sPath[0] != '.' || sPath[1] != PATH_SYM))
+#ifdef WIN32
+	if (sPath.length() >= 2 && sPath[1] == ':')
 		return sPath;
-	return ConcatPath(GetCurPath(), sPath.substr(2));
+#else
+	if (sPath.length() && sPath[0] == PATH_SYM)
+		return sPath;
+#endif
+	if (sPath.length() >= 2 && sPath[0] == '.' && (sPath[1] == '\\' || sPath[1] == '/'))
+		return ConcatPath(GetCurPath(), sPath.substr(2));
+	return ConcatPath(GetCurPath(), sPath);
 }
 
 CStdString ConcatPath(const CStdString &sPathA, const CStdString &sPathB)
