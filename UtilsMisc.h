@@ -16,7 +16,9 @@
 #include <string>
 #include <vector>
 
-#if !defined(WIN32)
+#if defined(WIN32)
+	#include "UtilsWin32.h"
+#else
 	#include <unistd.h>
 #endif
 
@@ -27,8 +29,9 @@
 #define CStdString					std::string
 #define CStdStringW					std::wstring
 #define CStdArray					std::vector
-#define CStdStringArray				std::vector<CStdString>
-#define CStdStringWArray			std::vector<CStdStringW>
+#define CStdByteArray					CStdArray<char>
+#define CStdStringArray				CStdArray<CStdString>
+#define CStdStringWArray			CStdArray<CStdStringW>
 
 #define TOSTRW(s)					CStdStringW(s.begin(), s.end())
 

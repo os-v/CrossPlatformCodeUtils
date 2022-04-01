@@ -32,15 +32,17 @@ public:
 	{
 	}
 
-	bool Load(const char *lpPath, long nLimit = 1024 * 1024)
+	bool Load(const char *lpPath, size_t nLimit = 1024 * 1024)
 	{
 		m_sPath = lpPath;
+		if (m_sPath.empty())
+			return false;
 		FILE *pFile = fopen(lpPath, "rb");
 		if(!pFile)
 			return false;
 		fseek(pFile, 0, SEEK_END);
 		size_t nResult = ftell(pFile);
-		if(nResult != -1 && nResult <= nLimit)
+		if(nResult != (size_t)-1 && nResult <= nLimit)
 		{
 			fseek(pFile, 0, SEEK_SET);
 			char *pData = new char[nResult + 1];
@@ -58,6 +60,8 @@ public:
 	{
 		if(!lpPath)
 			lpPath = m_sPath.c_str();
+		if (!*lpPath)
+			return false;
 		FILE *pFile = fopen(lpPath, "wb");
 		if(!pFile)
 			return false;
@@ -73,7 +77,6 @@ public:
 	{
 		m_pItems.clear();
 		std::string sGroup = "";
-		CVarMap &pGroup = m_pItems[sGroup];
 		for(const char *lpPtr = lpData; lpPtr && *lpPtr; )
 		{
 			size_t iSep;
@@ -86,19 +89,16 @@ public:
 			{
 				std::string sName = sLine.substr(1, sLine.length() - 2);
 				if (sName != sGroup)
-				{
-					m_pItems[sGroup] = pGroup;
-					pGroup = m_pItems[sGroup = sName];
-				}
+					m_pItems[sGroup = sName] = CVarMap();
 			}
 			else if ((iSep = sLine.find('=')) != -1)
 			{
 				std::string sName = sLine.substr(0, iSep);
 				std::string sValue = sLine.substr(iSep + 1);
+				CVarMap& pGroup = m_pItems[sGroup];
 				pGroup[sName] = sValue;
 			}
 		}
-		m_pItems[sGroup] = pGroup;
 	}
 
 	char *SaveData(size_t *pSize = 0)
@@ -191,8 +191,8 @@ public:
 	std::vector<std::string> EnumGroups()
 	{
 		std::vector<std::string> pResult;
-		for (auto &pGroup : m_pItems)
-			pResult.push_back(pGroup.first);
+		for (CVarGroup::const_iterator pGroup = m_pItems.begin(); pGroup != m_pItems.end(); pGroup++)
+			pResult.push_back(pGroup->first);
 		return pResult;
 	}
 
@@ -201,8 +201,8 @@ public:
 		std::vector<std::string> pResult;
 		CVarGroup::iterator pGroup = m_pItems.find(lpGroup);
 		if(pGroup != m_pItems.end())
-			for (auto &pGroup : pGroup->second)
-				pResult.push_back(pGroup.first);
+			for (CVarMap::const_iterator pVar = pGroup->second.begin(); pVar != pGroup->second.end(); pVar++)
+				pResult.push_back(pVar->first);
 		return pResult;
 	}
 
@@ -211,8 +211,8 @@ public:
 		std::vector<std::string> pResult;
 		CVarGroup::iterator pGroup = m_pItems.find(lpGroup);
 		if(pGroup != m_pItems.end())
-			for (auto &pGroup : pGroup->second)
-				pResult.push_back(pGroup.second);
+			for (CVarMap::const_iterator pVar = pGroup->second.begin(); pVar != pGroup->second.end(); pVar++)
+				pResult.push_back(pVar->second);
 		return pResult;
 	}
 

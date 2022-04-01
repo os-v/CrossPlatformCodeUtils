@@ -25,6 +25,15 @@ class CThreadImpl
 {
 public:
 
+	static void Sleep(uint32_t nMilliseconds)
+	{
+#if defined(WIN32)
+		::Sleep(nMilliseconds);
+#else
+		usleep(nMilliseconds);
+#endif
+	}
+
 	typedef uint32_t (*OnThreadProcFunc)(CThreadImpl *pThread, void *pContext);
 
 	static CThreadImpl *CreateThread(OnThreadProcFunc pExtFunc, void *pExtCtx)
@@ -61,7 +70,7 @@ public:
 		m_pExtThreadFunc = pExtFunc;
 #if defined(WIN32)
 		m_hThread = ::CreateThread(0, 0, SOnThreadProc, this, 0, 0);
-		return m_hThread;
+		return m_hThread != 0;
 #else
 		int nRet = pthread_create(&m_hThread, 0, SOnThreadProc, this);
 		return !nRet;
