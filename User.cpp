@@ -7,8 +7,13 @@
 //  Copyright 2021 Sergii Oryshchenko. All rights reserved.
 //
 
-#include "Process.h"
-#include <Windows.h>
+#include "User.h"
+
+#if defined(WIN32)
+	#include <Windows.h>
+#else
+	#include <pwd.h>
+#endif
 
 uid_t GetUserID(const CStdString &sUserInfo)
 {
@@ -23,6 +28,10 @@ uid_t GetUserID(const CStdString &sUserInfo)
 		nUserID.resize(nReturned);
 	else
 		nUserID.resize(0);
+#else
+	passwd *pUser = getpwnam(sUserInfo.c_str());
+	if(pUser)
+		nUserID = pUser->pw_uid;
 #endif
 	return nUserID;
 }
