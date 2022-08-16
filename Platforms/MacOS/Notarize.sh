@@ -17,24 +17,27 @@ DevIDPass=$5
 DevIDProv=$6
 RequestTimeout=$7
 
-BundleID="com.$ProductName"
+BundleID="$ProductName"
 
 AppFile="${AppPath##*/}"
-AppBase="${AppPath%/*}" 
+AppBase="${AppPath%/*}"
 
 if [ -z $RequestTimeout ]; then
-	RequestTimeout=60s
+	RequestTimeout=60
 fi
 
 echo "Signing ..."
 
 codesign --deep --force --verify --verbose --options runtime --sign "$CertName" "$AppPath"
 
-if [ "${AppFile##*.}" = $AppFile ]; then
+if [ "${AppFile##*.}" = "app" ]; then
+	AppPath=./${AppFile}.zip
+	ditto -ck --rsrc --sequesterRsrc --keepParent $AppFile $AppPath
+elif [ "${AppFile##*.}" = $AppFile ]; then
 	AppPath=./${AppFile}.zip
 	ditto -ck --rsrc --sequesterRsrc $AppFile $AppPath
 fi
-   
+
 echo "Uploading, please wait ..."
 
 UploadResult=$(xcrun altool --notarize-app --primary-bundle-id "$BundleID" --username "$DevIDUser" --password "$DevIDPass" --asc-provider "$DevIDProv" --file "$AppPath" 2>&1)
@@ -82,7 +85,15 @@ done
 
 echo "Notarization succeeded, stapling ..."
 
-xcrun stapler staple "$AppPath"
+if [[ "${AppFile##*.}" = "app" || "${AppFile##*.}" = $AppFile ]]; then
+	echo "Stapling app ..."
+	xcrun stapler staple "$AppFile"
+	spctl --assess --verbose "$AppFile" 
+	ditto -ck --rsrc --sequesterRsrc --keepParent $AppFile $AppPath
+else
+	echo "Stapling bundle ..."
+	xcrun stapler staple "$AppPath"
+fi
 
 echo "Notarization finished"
 
