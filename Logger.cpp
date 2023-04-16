@@ -52,11 +52,8 @@ uint64_t GetCurrentThreadID()
 #if defined(WIN32)
 	tid = GetCurrentThreadId();
 #elif defined(__APPLE__)
-	#if TARGET_IPHONE_SIMULATOR == 1
-	#elif TARGET_OS_IPHONE == 1
-	#elif TARGET_OS_MAC == 1
-		pthread_threadid_np(0, &tid);
-	#endif
+	//tid = (uint64_t)pthread_self();
+	pthread_threadid_np(0, &tid);
 #elif defined(__ANDROID__)
 //#elif defined(__linux__)
 #elif defined(__unix__)
@@ -139,32 +136,45 @@ bool LogIsRequired(int nLevel)
 void LogAMessage(const char *lpScope, const char *lpFmt, va_list args)
 {
 
+#ifndef LOG_DYN
 	static char pMessage[LOG_MAX_MESSAGE + 1];
+#endif
 
+	tm pTime;
 #ifdef WIN32
 	__int64 nTime = 0;
 	_time64(&nTime);
-	tm pTime = *gmtime(&nTime);
+	gmtime_s(&pTime, &nTime);
 	long nTimeMS = GetTickCount() % 1000;
 #else
 	timespec pTimeSpec;
 	clock_gettime(CLOCK_REALTIME, &pTimeSpec);
-	tm pTime = *gmtime(&pTimeSpec.tv_sec);
+	gmtime_r(&pTimeSpec.tv_sec, &pTime);
 	long nTimeMS = pTimeSpec.tv_nsec / 1000000;
 #endif
 
 	uint64_t pid = GetCurrentProcessID();
 	uint64_t tid = GetCurrentThreadID();
 
+#ifdef LOG_DYN
+	va_list pArgs;
+	va_copy(pArgs, args);
+	int nMaxLength = snprintf(0, 0, "%.2d.%.2d.%.2d %.2d-%.2d-%.2d.%.3d: [%d] [%d] [%s] [%s] ", pTime.tm_year % 100, pTime.tm_mon + 1, pTime.tm_mday, pTime.tm_hour, pTime.tm_min, pTime.tm_sec, (int)nTimeMS, (int)pid, (int)tid, GProcName, lpScope);
+	nMaxLength += vsnprintf(0, 0, lpFmt, pArgs) + 1;
+	va_end(pArgs);
+	char *pMessage = (char*)malloc(nMaxLength);
+#else
+	int nMaxLength = LOG_MAX_MESSAGE;
+#endif
+
 #if defined(LOG_SYNC) && !(defined(__APPLE__) && (TARGET_OS_IPHONE == 1) || defined(__ANDROID__))
 	static CSyncNamedMutex pLock("/CPCULoggerLock");
 	bool fLock = pLock.Lock(250);
 #endif
 
-	int nLength = sprintf(pMessage, "%.2d.%.2d.%.2d %.2d-%.2d-%.2d.%.3d: [%d] [%d] [%s] [%s] ", pTime.tm_year % 100, pTime.tm_mon + 1, pTime.tm_mday, pTime.tm_hour, pTime.tm_min, pTime.tm_sec, (int)nTimeMS, (int)pid, (int)tid, GProcName, lpScope);
-
-	int nMessage = vsnprintf(pMessage + nLength, LOG_MAX_MESSAGE - nLength, lpFmt, args);
-	nLength += (nMessage < 0 ? 0 : (nMessage >= LOG_MAX_MESSAGE - nLength ? LOG_MAX_MESSAGE - nLength - 1 : nMessage));
+	int nLength = snprintf(pMessage, nMaxLength, "%.2d.%.2d.%.2d %.2d-%.2d-%.2d.%.3d: [%d] [%d] [%s] [%s] ", pTime.tm_year % 100, pTime.tm_mon + 1, pTime.tm_mday, pTime.tm_hour, pTime.tm_min, pTime.tm_sec, (int)nTimeMS, (int)pid, (int)tid, GProcName, lpScope);
+	int nMessage = vsnprintf(pMessage + nLength, nMaxLength - nLength, lpFmt, args);
+	nLength += (nMessage < 0 ? 0 : (nMessage >= nMaxLength - nLength ? nMaxLength - nLength - 1 : nMessage));
 
 	*(pMessage + nLength) = '\n';
 
@@ -175,6 +185,10 @@ void LogAMessage(const char *lpScope, const char *lpFmt, va_list args)
 		pLock.Unlock();
 	else
 		pLock.Reset();
+#endif
+
+#ifdef LOG_DYN
+	delete pMessage;
 #endif
 
 }
@@ -198,8 +212,7 @@ long LogRMessage(char *lpText, int nLength)
 
 	if(GLogDebug)
 	{
-		lpText[nLength - 1] = 0;
-		puts(lpText);
+		fwrite(lpText, 1, nLength, stdout);
 		fflush(stdout);
 	}
 

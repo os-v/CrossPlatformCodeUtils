@@ -11,6 +11,7 @@
 #define LOGGER_H
 
 //#define LOG_SYNC
+//#define LOG_DYN
 
 #define LOG_MAX_MESSAGE			1024 * 1024
 
